@@ -1,16 +1,39 @@
 import streamlit as st
+import pandas as pd
 import numpy as np
-import joblib
 
-# Load saved model and scaler
-model = joblib.load("model.pkl")
-scaler = joblib.load("scaler.pkl")
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.ensemble import RandomForestClassifier
 
 st.title("Loan Approval Prediction System")
 
+# Load dataset
+df = pd.read_csv("loan_approval_dataset.csv")
+df.columns = df.columns.str.strip()
+
+df.drop("loan_id", axis=1, inplace=True)
+
+le = LabelEncoder()
+df["education"] = le.fit_transform(df["education"])
+df["self_employed"] = le.fit_transform(df["self_employed"])
+df["loan_status"] = le.fit_transform(df["loan_status"])
+
+X = df.drop("loan_status", axis=1)
+y = df["loan_status"]
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+
+model = RandomForestClassifier()
+model.fit(X_train, y_train)
+
 st.header("Enter Applicant Details")
 
-# User Inputs
 no_of_dependents = st.number_input("Number of Dependents", 0, 10, 0)
 education = st.selectbox("Education", ["Graduate", "Not Graduate"])
 self_employed = st.selectbox("Self Employed", ["Yes", "No"])
@@ -23,11 +46,9 @@ commercial_assets_value = st.number_input("Commercial Assets Value", 0)
 luxury_assets_value = st.number_input("Luxury Assets Value", 0)
 bank_asset_value = st.number_input("Bank Asset Value", 0)
 
-# Convert categorical to numeric
 education = 1 if education == "Graduate" else 0
 self_employed = 1 if self_employed == "Yes" else 0
 
-# Prediction Button
 if st.button("Predict Loan Status"):
 
     input_data = np.array([[no_of_dependents,
